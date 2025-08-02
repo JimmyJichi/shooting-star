@@ -32,7 +32,7 @@ pip install -r requirements.txt
 
 Use this URL (replace `YOUR_BOT_CLIENT_ID` with your bot's client ID):
 ```
-https://discord.com/api/oauth2/authorize?client_id=YOUR_BOT_CLIENT_ID&permissions=2048&scope=bot%20applications.commands
+https://discord.com/api/oauth2/authorize?client_id=YOUR_BOT_CLIENT_ID&permissions=2147600448&scope=bot%20applications.commands
 ```
 
 ### 4. Get Channel ID
