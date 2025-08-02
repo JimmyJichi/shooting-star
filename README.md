@@ -71,23 +71,11 @@ python bot.py
    - slime
    - ithaca
 
-2. Users have 60 seconds to type the exact message to catch the shooting star
+2. Users have 30 seconds to type the exact message to catch the shooting star
 
 3. The first person to type the correct message earns 130 coins
 
 4. If no one catches it within 30 seconds, the shooting star fades away
-
-## Database
-
-The bot uses SQLite to store user data:
-- `shooting_star.db` - Contains user IDs, usernames, and coin counts
-
-## Files
-
-- `bot.py` - Main bot code
-- `requirements.txt` - Python dependencies
-- `env_example.txt` - Example environment variables
-- `README.md` - This file
 
 ## Customization
 
