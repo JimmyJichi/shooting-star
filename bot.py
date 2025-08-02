@@ -161,14 +161,18 @@ async def on_message(message):
         await message.channel.send(embed=embed)
 
 @bot.tree.command(name='coins', description='Check your coin balance')
-async def check_coins(interaction: discord.Interaction):
-    """Check your coin balance"""
-    user_id = interaction.user.id
+async def check_coins(interaction: discord.Interaction, user: discord.User = None):
+    """Check your coin balance or another user's balance"""
+    # If no user specified, check the command user's balance
+    if user is None:
+        user = interaction.user
+    
+    user_id = user.id
     coins = get_user_coins(user_id)
     
     embed = discord.Embed(
         title="💰 Coin Balance",
-        description=f"{interaction.user.mention}, you have **{coins} coins**!",
+        description=f"{user.mention} has **{coins} coins**!",
         color=0xffd700
     )
     await interaction.response.send_message(embed=embed)
