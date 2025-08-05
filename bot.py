@@ -94,11 +94,17 @@ def generate_daily_schedule(channel_ids):
         'date': today,
         'events': []
     }
+
+    used_hours = set()
     
     # Generate 6 random times and assign channels and messages
     for i in range(6):
         # Random hour between 0 and 23
         hour = random.randint(0, 23)
+        while hour in used_hours:
+            hour = random.randint(0, 23)
+        used_hours.add(hour)
+        
         # Random minute
         minute = random.randint(0, 59)
         
