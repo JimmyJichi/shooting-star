@@ -1,10 +1,10 @@
 # 🌠 Shooting Star Discord Bot
 
-A Discord bot that creates an interactive shooting star game every 15 minutes. Users can catch shooting stars by typing specific messages to earn coins.
+A Discord bot that creates an interactive shooting star game with 6 random events per day. Users can catch shooting stars by typing specific messages to earn coins.
 
 ## Features
 
-- **Scheduled Shooting Stars**: Every 15 minutes, a shooting star appears with a random message to catch
+- **Daily Scheduled Events**: 6 shooting star events per day at random times
 - **Coin System**: Users earn 130 coins for successfully catching a shooting star
 - **SQLite Database**: Persistent storage for user coins
 - **Leaderboard**: View top users by coin count
@@ -38,7 +38,7 @@ https://discord.com/api/oauth2/authorize?client_id=YOUR_BOT_CLIENT_ID&permission
 ### 4. Get Channel ID
 
 1. Enable Developer Mode in Discord (User Settings > Advanced > Developer Mode)
-2. Right-click on the channel where you want shooting stars to appear
+2. Right-click on the channels where you want shooting stars to appear
 3. Click "Copy ID"
 
 ### 5. Create Environment File
@@ -47,7 +47,7 @@ Create a `.env` file in the project directory:
 
 ```env
 DISCORD_TOKEN=your_discord_bot_token_here
-CHANNEL_ID=your_channel_id_here
+CHANNEL_IDS=your_channel_id_here,your_channel_id_here
 OWNER_ID=your_user_id_here
 ```
 
@@ -64,23 +64,29 @@ python bot.py
 
 ## Game Mechanics
 
-1. Every 15 minutes, a shooting star appears with a random message from:
+1. **Daily Schedule**: Each day, 6 shooting star events are scheduled at random times throughout the day (24-hour period)
+
+2. **Channel Assignment**: Each event is predetermined to appear in a specific channel, ensuring each channel gets events throughout the day
+
+3. **Catch Messages**: When a shooting star appears, users must type one of these exact messages:
    - rawr
    - scylla
    - object
    - slime
    - ithaca
+   - tiddles
 
-2. Users have 30 seconds to type the exact message to catch the shooting star
+4. **Time Limit**: Users have 60 seconds to type the correct message to catch the shooting star
 
-3. The first person to type the correct message earns 130 coins
+5. **Rewards**: The first person to type the correct message earns 130 coins
 
-4. If no one catches it within 30 seconds, the shooting star fades away
+6. If no one catches it within 60 seconds, the shooting star fades away
 
 ## Customization
 
 You can modify the following in `bot.py`:
 - `possible_messages` list - Change the catch phrases
-- `@tasks.loop(minutes=15)` - Change the frequency
-- `await asyncio.sleep(30)` - Change the time limit
-- `add_coins(user_id, username, 130)` - Change the reward amount 
+- `range(6)` in `generate_daily_schedule()` - Change the number of daily events
+- `random.randint(0, 23)` - Change the time range (currently 24 hours)
+- `await asyncio.sleep(60)` - Change the catch time limit
+- `add_coins(user_id, username, 130)` - Change the reward amount

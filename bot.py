@@ -6,6 +6,7 @@ import random
 import asyncio
 import datetime
 import os
+import json
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -59,7 +60,94 @@ def add_coins(user_id, username, amount):
 shooting_star_active = False
 current_message = ""
 current_channel = None
-possible_messages = ["rawr", "scylla", "object", "slime", "ithaca"]
+possible_messages = ["rawr", "scylla", "object", "slime", "ithaca", "tiddles"]
+
+# Schedule file
+SCHEDULE_FILE = 'shooting_star_schedule.json'
+
+def load_schedule():
+    """Load schedule from file"""
+    try:
+        with open(SCHEDULE_FILE, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+
+def save_schedule(schedule):
+    """Save schedule to file"""
+    with open(SCHEDULE_FILE, 'w') as f:
+        json.dump(schedule, f, indent=2)
+
+def generate_daily_schedule(channel_ids):
+    """Generate a new daily schedule with predetermined channels"""
+    today = datetime.date.today().isoformat()
+    
+    # Shuffle channels to randomize the order
+    shuffled_channels = channel_ids.copy()
+    random.shuffle(shuffled_channels)
+    
+    schedule = {
+        'date': today,
+        'events': []
+    }
+    
+    # Generate 3 random times and assign channels
+    for i in range(6):
+        # Random hour between 9 and 23 (9 AM to 11 PM)
+        hour = random.randint(0, 23)
+        # Random minute
+        minute = random.randint(0, 59)
+        
+        # Use modulo to cycle through channels if there are fewer than 3
+        channel_id = shuffled_channels[i % len(shuffled_channels)]
+        
+        event = {
+            'time': f"{hour:02d}:{minute:02d}",
+            'channel_id': channel_id,
+            'completed': False
+        }
+        schedule['events'].append(event)
+    
+    # Sort events by time
+    schedule['events'].sort(key=lambda x: x['time'])
+    
+    return schedule
+
+def get_current_schedule(channel_ids):
+    """Get or generate the current day's schedule"""
+    schedule = load_schedule()
+    today = datetime.date.today().isoformat()
+    
+    # If no schedule exists or it's for a different day, generate new one
+    if not schedule or schedule.get('date') != today:
+        schedule = generate_daily_schedule(channel_ids)
+        save_schedule(schedule)
+        print(f"Generated daily schedule: {[f'{e['time']} (Channel {e['channel_id']})' for e in schedule['events']]}")
+    
+    return schedule
+
+def get_next_event(schedule):
+    """Get the next uncompleted event"""
+    now = datetime.datetime.now()
+    
+    for event in schedule['events']:
+        if not event['completed']:
+            # Parse event time
+            hour, minute = map(int, event['time'].split(':'))
+            event_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            
+            if event_time <= now:
+                return event
+    
+    return None
+
+def mark_event_completed(schedule, event):
+    """Mark an event as completed and save the schedule"""
+    for e in schedule['events']:
+        if e['time'] == event['time'] and e['channel_id'] == event['channel_id']:
+            e['completed'] = True
+            break
+    save_schedule(schedule)
 
 @bot.event
 async def on_ready():
@@ -67,24 +155,46 @@ async def on_ready():
     init_database()
     shooting_star_task.start()
 
-@tasks.loop(minutes=15)
+@tasks.loop(minutes=1)  # Check every minute
 async def shooting_star_task():
     global shooting_star_active, current_message, current_channel
     
-    # Get the channel ID from environment variable or use a default
-    channel_id = int(os.getenv('CHANNEL_ID', 0))
-    if channel_id == 0:
-        print("Please set CHANNEL_ID in your .env file")
+    # Get the channel IDs from environment variable
+    channel_ids_str = os.getenv('CHANNEL_IDS', '')
+    if not channel_ids_str:
+        print("Please set CHANNEL_IDS in your .env file (comma-separated list of channel IDs)")
         return
     
-    channel = bot.get_channel(channel_id)
+    # Parse channel IDs from comma-separated string
+    try:
+        channel_ids = [int(cid.strip()) for cid in channel_ids_str.split(',')]
+    except ValueError:
+        print("Invalid CHANNEL_IDS format. Please use comma-separated channel IDs")
+        return
+    
+    # Get current schedule
+    schedule = get_current_schedule(channel_ids)
+    
+    # Check if it's time for the next event
+    next_event = get_next_event(schedule)
+    if not next_event:
+        return  # No more events today
+    
+    # Mark this event as completed
+    mark_event_completed(schedule, next_event)
+    
+    # Get the predetermined channel
+    channel = bot.get_channel(next_event['channel_id'])
     if not channel:
-        print(f"Could not find channel with ID {channel_id}")
+        print(f"Could not find channel with ID {next_event['channel_id']}")
         return
     
     current_channel = channel
     current_message = random.choice(possible_messages)
     shooting_star_active = True
+    
+    now = datetime.datetime.now()
+    print(f"Starting shooting star event in channel {channel.name} at {now.strftime('%H:%M:%S')} (scheduled for {next_event['time']})")
     
     embed = discord.Embed(
         title="🌠 A Shooting Star Appears!",
@@ -96,7 +206,7 @@ async def shooting_star_task():
         value=f"Type `{current_message}` to catch it! 🌟\nHurry, time's running out! ⏳",
         inline=False
     )
-    embed.set_footer(text="You have 30 seconds to catch it!")
+    embed.set_footer(text="You have 60 seconds to catch it!")
     
     # Attach the image to the embed
     with open('image.png', 'rb') as f:
@@ -104,8 +214,8 @@ async def shooting_star_task():
         embed.set_image(url='attachment://shooting_star.png')
         await channel.send(embed=embed, file=file)
     
-    # Wait 30 seconds for responses
-    await asyncio.sleep(30)
+    # Wait 60 seconds for responses
+    await asyncio.sleep(60)
     
     if shooting_star_active:
         # No one caught it
