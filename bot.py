@@ -79,31 +79,39 @@ def save_schedule(schedule):
         json.dump(schedule, f, indent=2)
 
 def generate_daily_schedule(channel_ids):
-    """Generate a new daily schedule with predetermined channels"""
+    """Generate a new daily schedule with predetermined channels and messages"""
     today = datetime.date.today().isoformat()
     
     # Shuffle channels to randomize the order
     shuffled_channels = channel_ids.copy()
     random.shuffle(shuffled_channels)
     
+    # Shuffle messages to ensure each one is used once
+    shuffled_messages = possible_messages.copy()
+    random.shuffle(shuffled_messages)
+    
     schedule = {
         'date': today,
         'events': []
     }
     
-    # Generate 3 random times and assign channels
+    # Generate 6 random times and assign channels and messages
     for i in range(6):
-        # Random hour between 9 and 23 (9 AM to 11 PM)
+        # Random hour between 0 and 23
         hour = random.randint(0, 23)
         # Random minute
         minute = random.randint(0, 59)
         
-        # Use modulo to cycle through channels if there are fewer than 3
+        # Use modulo to cycle through channels if there are fewer than 6
         channel_id = shuffled_channels[i % len(shuffled_channels)]
+        
+        # Use each message once (shuffled order)
+        message = shuffled_messages[i % len(shuffled_messages)]
         
         event = {
             'time': f"{hour:02d}:{minute:02d}",
             'channel_id': channel_id,
+            'message': message,
             'completed': False
         }
         schedule['events'].append(event)
@@ -122,7 +130,7 @@ def get_current_schedule(channel_ids):
     if not schedule or schedule.get('date') != today:
         schedule = generate_daily_schedule(channel_ids)
         save_schedule(schedule)
-        print(f"Generated daily schedule: {[f'{e['time']} (Channel {e['channel_id']})' for e in schedule['events']]}")
+        print(f"Generated daily schedule: {[f'{e['time']} (Channel {e['channel_id']}, Message: {e['message']})' for e in schedule['events']]}")
     
     return schedule
 
@@ -190,11 +198,11 @@ async def shooting_star_task():
         return
     
     current_channel = channel
-    current_message = random.choice(possible_messages)
+    current_message = next_event['message']  # Use the predetermined message
     shooting_star_active = True
     
     now = datetime.datetime.now()
-    print(f"Starting shooting star event in channel {channel.name} at {now.strftime('%H:%M:%S')} (scheduled for {next_event['time']})")
+    print(f"Starting shooting star event in channel {channel.name} at {now.strftime('%H:%M:%S')} (scheduled for {next_event['time']}, message: {current_message})")
     
     embed = discord.Embed(
         title="🌠 A Shooting Star Appears!",
