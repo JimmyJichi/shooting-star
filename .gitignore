@@ -1,3 +1,4 @@
 .env
 venv/
 shooting_star.db
+shooting_star_schedule.json
