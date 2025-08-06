@@ -136,7 +136,12 @@ def get_current_schedule(channel_ids):
     if not schedule or schedule.get('date') != today:
         schedule = generate_daily_schedule(channel_ids)
         save_schedule(schedule)
-        print(f"Generated daily schedule: {[f'{e['time']} (Channel {e['channel_id']}, Message: {e['message']})' for e in schedule['events']]}")
+        event_descriptions = []
+        for e in schedule['events']:
+            event_descriptions.append(f"{e['time']} (Channel {e['channel_id']}, Message: {e['message']})")
+        print("Generated daily schedule:")
+        for desc in event_descriptions:
+            print(f"  {desc}")
     
     return schedule
 
